@@ -13,17 +13,17 @@ export default function BoardToggle() {
         href={"/"}
         className={`p-2 ${
           path === "/" ? "bg-muted" : ""
-        } cursor-pointer hover:bg-muted w-14`}
+        } cursor-pointer hover:bg-muted w-14 transition-all duration-200`}
       >
-        <Label>Board</Label>
+        <Label className="cursor-pointer">Board</Label>
       </Link>
       <Link
         href={"/list"}
         className={`p-2 ${
           path === "/list" ? "bg-muted" : ""
-        } cursor-pointer hover:bg-muted w-14`}
+        } cursor-pointer hover:bg-muted w-14 transition-all duration-200`}
       >
-        <Label>List</Label>
+        <Label className="cursor-pointer">List</Label>
       </Link>
     </div>
   );
