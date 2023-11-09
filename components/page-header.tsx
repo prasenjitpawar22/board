@@ -1,5 +1,5 @@
-import BoardToggle from "../board-toggle";
-import ModeToggle from "../display-mode-toggle";
+import BoardToggle from "./board-toggle";
+import ModeToggle from "./display-mode-toggle";
 
 export default function Header() {
   return (

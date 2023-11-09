@@ -13,11 +13,10 @@ export enum columnstate {
   In_progress = "In progress",
   Done = "Done",
   To_do = "To do",
-  //   In_review = "Procrastinating",
 }
 
 export type Column = {
-  name: columnstate;
+  name: columnstate | string;
   items: Task[];
 };
 
@@ -29,7 +28,7 @@ export type Task = {
   id: string;
   title: string;
   assignedTo: string;
-  state: columnstate;
+  state: columnstate | string;
   tags: string[];
   activityDate: string;
   comments: string[];
@@ -56,10 +55,6 @@ const initialState: BoardProviderState = {
       name: columnstate.In_progress,
       items: [],
     },
-    // [uuidv4v4()]: {
-    //   name: columnstate.In_review,
-    //   items: [],
-    // },
     [uuidv4v4()]: {
       name: columnstate.Done,
       items: [],
@@ -76,20 +71,17 @@ export function BoardProvider({
   storageKey = "todo-next-ui-board",
   ...props
 }: BoardProviderProps) {
-  // const [columns, setColumns] = useState<Columns>(() => {
-  //   const columns = localStorage.getItem(storageKey);
-
-  //   if (columns === "" || columns === null) return defaultBoard;
-  //   return JSON.parse(columns);
-  // });
-  const [columns, setColumns] = useState<Columns>(defaultBoard);
+  const [columns, setColumns] = useState<Columns>({});
 
   useEffect(() => {
-    const columns = localStorage.getItem(storageKey);
-    if (columns === "" || columns === null) setColumns(defaultBoard);
-    else {
-      setColumns(JSON.parse(columns));
-      console.log(JSON.parse(columns), "in usestate");
+    const localColumns = localStorage.getItem(storageKey);
+    if (localColumns) {
+      const columns: Columns = JSON.parse(localColumns);
+      Object.keys(columns).length !== 0
+        ? setColumns(columns)
+        : setColumns(defaultBoard);
+    } else {
+      setColumns(defaultBoard);
     }
   }, []);
 
