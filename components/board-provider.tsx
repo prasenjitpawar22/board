@@ -35,7 +35,7 @@ export type Task = {
 };
 
 // board type
-export type Board = {
+export type TBoard = {
   id: string;
   name: string;
   columns: TColumns;
@@ -43,13 +43,13 @@ export type Board = {
 
 type BoardProviderProps = {
   children: ReactNode;
-  defaultBoard?: Board[];
+  defaultBoard?: TBoard[];
   storageKey?: string;
 };
 
 export type BoardProviderState = {
-  boards: Board[];
-  setBoards: (board: Board[]) => void;
+  boards: TBoard[];
+  setBoards: (board: TBoard[]) => void;
 };
 
 const initialState: BoardProviderState = {
@@ -84,12 +84,14 @@ export function BoardProvider({
   storageKey = "todo-next-ui-board",
   ...props
 }: BoardProviderProps) {
-  const [boards, setBoards] = useState<Board[]>([]);
+  const [boards, setBoards] = useState<TBoard[]>([]);
 
   useEffect(() => {
     const localBoards = localStorage.getItem(storageKey);
     if (localBoards) {
-      const boards: Board[] = JSON.parse(localBoards);
+      const boards: TBoard[] = JSON.parse(localBoards);
+      console.log(boards.length, boards);
+
       boards.length !== 0 ? setBoards(boards) : setBoards(defaultBoard);
     } else {
       setBoards(defaultBoard);
@@ -98,7 +100,7 @@ export function BoardProvider({
 
   const value = {
     boards,
-    setBoards: (boards: Board[]) => {
+    setBoards: (boards: TBoard[]) => {
       localStorage.setItem(storageKey, JSON.stringify(boards));
       setBoards(boards);
     },

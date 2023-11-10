@@ -13,6 +13,7 @@ import { v4 as uuidv4v4 } from "uuid";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
+  TBoard,
   BoardProviderState,
   TColumn,
   TColumns,
@@ -33,14 +34,20 @@ import {
 } from "./ui/dialog";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
+import { MagnifyingGlassIcon } from "@radix-ui/react-icons";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 type Props = {
   id: string;
-  boardColumns: TColumns;
+  // boardColumns: TColumns;
 };
 
-const Board = ({ id, boardColumns }: Props) => {
+export const Board = ({ id }: Props) => {
   const { setBoards, boards } = useBoard();
+  const [board, setBoard] = useState<TBoard | undefined>(() => {
+    const findBoard = boards.find((item) => item.id === id);
+    if (findBoard) return findBoard;
+  });
 
   const [addFunctionCalled, setAddFunctionCalled] = useState({
     state: false,
@@ -213,7 +220,7 @@ const Board = ({ id, boardColumns }: Props) => {
     setBoards(updatedBoard);
   };
 
-  return boards.length > 0 ? (
+  return board && boards.length > 0 ? (
     <div className="flex flex-col gap-2 w-full items-center justify-center">
       <div className="flex gap-2 w-full">
         <Dialog>
@@ -259,7 +266,7 @@ const Board = ({ id, boardColumns }: Props) => {
         <DragDropContext
           onDragEnd={(result) => onDragEnd(result, { boards, setBoards })}
         >
-          {Object.entries(boards[0].columns)?.map(([columnId, column]) => {
+          {Object.entries(board.columns)?.map(([columnId, column]) => {
             return (
               <div className="mr-3 flex flex-col mb-2" key={columnId}>
                 <Card className="w-full rounded-bl-none rounded-br-none shadow-none border bg-background text-center">
@@ -323,14 +330,14 @@ const Board = ({ id, boardColumns }: Props) => {
                                           const updateBoards = boards.map(
                                             (cur) => {
                                               if (cur.id === id) {
-                                                const items = boardColumns[
-                                                  columnId
-                                                ].items.map((i) => {
-                                                  if (i.id === item.id) {
-                                                    i.title = e.target.value;
+                                                cur.columns[columnId].items.map(
+                                                  (i) => {
+                                                    if (i.id === item.id) {
+                                                      i.title = e.target.value;
+                                                    }
+                                                    return i;
                                                   }
-                                                  return i;
-                                                });
+                                                );
                                               }
                                               return cur;
                                             }
@@ -386,4 +393,33 @@ const Board = ({ id, boardColumns }: Props) => {
   ) : null;
 };
 
-export default Board;
+export const BoardWrapper = ({ id }: { id: string }) => {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  // const [boardColumns, setBoardColumns] = useState<TColumns>();
+  const { boards } = useBoard();
+
+  useEffect(() => {
+    const board = boards.find((item) => item.id === id);
+    if (board === undefined) {
+      setError(true);
+    }
+    setLoading(false);
+  }, []);
+
+  if (loading) return null;
+
+  return !error ? (
+    <Board id={id} />
+  ) : (
+    <div className="flex items-center justify-center">
+      <Alert className="w-[450px]">
+        <MagnifyingGlassIcon className="h-4 w-4" />
+        <AlertTitle className="">Not found!</AlertTitle>
+        <AlertDescription className="">
+          {`The board was not found, make sure it's the right path`}
+        </AlertDescription>
+      </Alert>
+    </div>
+  );
+};
