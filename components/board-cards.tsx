@@ -30,7 +30,7 @@ export default function BoardList() {
       </div>
       <div className="flex flex-wrap w-full gap-4">
         {boards.map((board, i) => (
-          <Link href={board.id}>
+          <Link key={i} href={board.id}>
             <Card key={i} className="w-52 h-28 overflow-y-auto">
               <CardHeader>
                 <CardTitle> {board.id.substring(0, 7)} </CardTitle>
