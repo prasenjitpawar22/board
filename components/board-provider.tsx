@@ -15,13 +15,13 @@ export enum columnstate {
   To_do = "To do",
 }
 
-export type Column = {
+export type TColumn = {
   name: columnstate | string;
   items: Task[];
 };
 
-export type Columns = {
-  [x: string]: Column;
+export type TColumns = {
+  [x: string]: TColumn;
 };
 
 export type Task = {
@@ -34,62 +34,73 @@ export type Task = {
   comments: string[];
 };
 
+// board type
+export type Board = {
+  id: string;
+  name: string;
+  columns: TColumns;
+};
+
 type BoardProviderProps = {
   children: ReactNode;
-  defaultBoard?: Columns;
+  defaultBoard?: Board[];
   storageKey?: string;
 };
 
 export type BoardProviderState = {
-  columns: Columns;
-  setColumns: (columns: Columns) => void;
+  boards: Board[];
+  setBoards: (board: Board[]) => void;
 };
 
 const initialState: BoardProviderState = {
-  columns: {
-    [uuidv4v4()]: {
-      name: columnstate.To_do,
-      items: [],
+  boards: [
+    {
+      id: uuidv4v4(),
+      name: "Default board",
+      columns: {
+        [uuidv4v4()]: {
+          name: columnstate.To_do,
+          items: [],
+        },
+        [uuidv4v4()]: {
+          name: columnstate.In_progress,
+          items: [],
+        },
+        [uuidv4v4()]: {
+          name: columnstate.Done,
+          items: [],
+        },
+      },
     },
-    [uuidv4v4()]: {
-      name: columnstate.In_progress,
-      items: [],
-    },
-    [uuidv4v4()]: {
-      name: columnstate.Done,
-      items: [],
-    },
-  },
-  setColumns: () => null,
+  ],
+  setBoards: () => null,
 };
 
 const BoardProviderContext = createContext<BoardProviderState>(initialState);
 
 export function BoardProvider({
   children,
-  defaultBoard = initialState.columns,
+  defaultBoard = initialState.boards,
   storageKey = "todo-next-ui-board",
   ...props
 }: BoardProviderProps) {
-  const [columns, setColumns] = useState<Columns>({});
+  const [boards, setBoards] = useState<Board[]>([]);
 
   useEffect(() => {
-    const localColumns = localStorage.getItem(storageKey);
-    if (localColumns) {
-      const columns: Columns = JSON.parse(localColumns);
-      Object.keys(columns).length !== 0
-        ? setColumns(columns)
-        : setColumns(defaultBoard);
+    const localBoards = localStorage.getItem(storageKey);
+    if (localBoards) {
+      const boards: Board[] = JSON.parse(localBoards);
+      boards.length !== 0 ? setBoards(boards) : setBoards(defaultBoard);
     } else {
-      setColumns(defaultBoard);
+      setBoards(defaultBoard);
     }
   }, []);
 
   const value = {
-    columns,
-    setColumns: (columns: Columns) => {
-      localStorage.setItem(storageKey, JSON.stringify(columns));
-      setColumns({ ...columns });
+    boards,
+    setBoards: (boards: Board[]) => {
+      localStorage.setItem(storageKey, JSON.stringify(boards));
+      setBoards(boards);
     },
   };
 

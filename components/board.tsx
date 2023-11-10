@@ -1,8 +1,8 @@
 "use client";
 
 import { Card, CardContent, CardDescription } from "@/components/ui/card";
-import { BadgeMinus, BadgePlus, Columns, Trash2Icon, X } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { BadgePlus, Trash2Icon, X } from "lucide-react";
+import { useState, useEffect, useCallback, ChangeEvent } from "react";
 import {
   DragDropContext,
   Draggable,
@@ -14,7 +14,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
   BoardProviderState,
-  Column,
+  TColumn,
+  TColumns,
   Task,
   columnstate,
   useBoard,
@@ -33,54 +34,67 @@ import {
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 
-export default function Board() {
-  const { columns, setColumns } = useBoard();
-  const val = useBoard();
-  console.log(val, "");
+type Props = {
+  id: string;
+  boardColumns: TColumns;
+};
+
+const Board = ({ id, boardColumns }: Props) => {
+  const { setBoards, boards } = useBoard();
 
   const [addFunctionCalled, setAddFunctionCalled] = useState({
     state: false,
     itemId: "",
   });
   const [inputColumnName, setInputColumnName] = useState("");
+
   // on drag
   const onDragEnd = useCallback(
-    (result: DropResult, { columns, setColumns }: BoardProviderState) => {
+    (result: DropResult, { boards, setBoards }: BoardProviderState) => {
       if (!result.destination) return;
       const { source, destination } = result;
 
-      if (source.droppableId !== destination.droppableId) {
-        const sourceColumn = columns[source.droppableId];
-        const destColumn = columns[destination.droppableId];
-        const sourceItems = [...sourceColumn.items];
-        const destItems = [...destColumn.items];
-        const [removed] = sourceItems.splice(source.index, 1);
-        destItems.splice(destination.index, 0, removed);
-        destItems[destination.index].state = destColumn.name;
+      const board = boards.find((cur) => cur.id === id);
 
-        setColumns({
-          ...columns,
-          [source.droppableId]: {
-            ...sourceColumn,
-            items: sourceItems,
-          },
-          [destination.droppableId]: {
-            ...destColumn,
-            items: destItems,
-          },
-        });
-      } else {
-        const column = columns[source.droppableId];
-        const copiedItems = [...column.items];
-        const [removed] = copiedItems.splice(source.index, 1);
-        copiedItems.splice(destination.index, 0, removed);
-        setColumns({
-          ...columns,
-          [source.droppableId]: {
-            ...column,
-            items: copiedItems,
-          },
-        });
+      if (board) {
+        // get the columns
+        board.columns[source.droppableId];
+        if (source.droppableId !== destination.droppableId) {
+          const sourceColumn = board.columns[source.droppableId];
+          const destColumn = board.columns[destination.droppableId];
+          const sourceItems = [...sourceColumn.items];
+          const destItems = [...destColumn.items];
+          const [removed] = sourceItems.splice(source.index, 1);
+          destItems.splice(destination.index, 0, removed);
+          destItems[destination.index].state = destColumn.name;
+
+          const updatedBoard = boards.map((cur) => {
+            if (cur.id === id) {
+              const updateColumn = cur.columns[source.droppableId];
+              updateColumn.items = sourceItems;
+              const updateDropColumn = cur.columns[destination.droppableId];
+              updateDropColumn.items = destItems;
+            }
+            return cur;
+          });
+
+          setBoards(updatedBoard);
+        } else {
+          const column = board.columns[source.droppableId];
+          const copiedItems = [...column.items];
+          const [removed] = copiedItems.splice(source.index, 1);
+          copiedItems.splice(destination.index, 0, removed);
+
+          const updatedBoard = boards.map((cur) => {
+            if (cur.id === id) {
+              const updateDropColumn = cur.columns[destination.droppableId];
+              updateDropColumn.items = copiedItems;
+            }
+            return cur;
+          });
+
+          setBoards(updatedBoard);
+        }
       }
     },
     []
@@ -89,45 +103,63 @@ export default function Board() {
   // add task
   const handleAdd = useCallback(
     (columnId: string) => {
-      const items = columns[columnId].items;
-      const newItemId = uuidv4v4();
-      const newItems: Task[] = [
-        {
-          title: "",
-          id: newItemId,
-          state: columns[columnId].name,
-          activityDate: "",
-          assignedTo: "",
-          comments: [""],
-          tags: [""],
-        },
-        ...items,
-      ];
+      // get the board
+      const currentBoard = boards.find((item) => item.id === id);
+      console.log(currentBoard);
 
-      setColumns({
-        ...columns,
-        [columnId]: {
-          ...columns[columnId],
-          items: newItems,
-        },
-      });
-      setAddFunctionCalled({ state: true, itemId: newItemId });
+      if (currentBoard && currentBoard.columns) {
+        const columns = currentBoard.columns;
+        const items = columns[columnId].items;
+        const newItemId = uuidv4v4();
+        const newItems: Task[] = [
+          {
+            title: "",
+            id: newItemId,
+            state: columns[columnId].name,
+            activityDate: "",
+            assignedTo: "",
+            comments: [""],
+            tags: [""],
+          },
+          ...items,
+        ];
+
+        // update the column of that board
+        const updateBorad = boards.map((cur) => {
+          if (cur.id === id) {
+            const column = cur.columns[columnId];
+            column.items = newItems;
+            cur.columns[columnId] = column;
+          }
+          return cur;
+        });
+
+        console.log(updateBorad, "updated");
+
+        setBoards(updateBorad);
+        setAddFunctionCalled({ state: true, itemId: newItemId });
+      }
     },
-    [columns]
+    [boards]
   );
 
   // delete task
   const handleDelete = useCallback(
-    (item: Task, column: Column, columnId: string) => {
-      setColumns({
-        ...columns,
-        [columnId]: {
-          ...column,
-          items: columns[columnId].items.filter((i) => i.id != item.id),
-        },
-      });
+    (item: Task, column: TColumn, columnId: string) => {
+      const currentBoard = boards.find((item) => item.id === id);
+      if (currentBoard) {
+        const updateBoard = boards.map((cur) => {
+          if (cur.id === id) {
+            const column = cur.columns[columnId];
+            column.items = column.items.filter((task) => task.id != item.id);
+            cur.columns[columnId] = column;
+          }
+          return cur;
+        });
+        setBoards(updateBoard);
+      }
     },
-    [columns]
+    [boards]
   );
 
   // focus the input field
@@ -144,20 +176,44 @@ export default function Board() {
   const handleAddColumn = () => {
     if (inputColumnName != "") {
       const columnId = uuidv4v4();
-      const newColumn: Column = { name: inputColumnName, items: [] };
-      setColumns({ ...columns, [columnId]: newColumn });
+      // const newColumn =
+
+      const updateBoard = boards.map((cur) => {
+        if (cur.id === id) {
+          const newColumn: TColumn = { name: inputColumnName, items: [] };
+          const updatedColumns: TColumns = {
+            ...cur.columns,
+            [uuidv4v4()]: newColumn,
+          };
+
+          cur.columns = updatedColumns;
+        }
+        return cur;
+      });
+      setBoards(updateBoard);
+      // setColumns({ ...columns, [columnId]: newColumn });
     }
   };
+
+  const handleTaskTitleChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => setInputColumnName(e.target.value),
+    []
+  );
 
   // remove column
   const handleRemoveColumn = (columnId: string) => {
-    if (Object.hasOwn(columns, columnId)) {
-      delete columns[columnId];
-      setColumns(columns);
-    }
+    const updatedBoard = boards.map((cur) => {
+      if (cur.id) {
+        if (Object.hasOwn(cur.columns, columnId)) {
+          delete cur.columns[columnId];
+        }
+      }
+      return cur;
+    });
+    setBoards(updatedBoard);
   };
 
-  return (
+  return boards.length > 0 ? (
     <div className="flex flex-col gap-2 w-full items-center justify-center">
       <div className="flex gap-2 w-full">
         <Dialog>
@@ -180,7 +236,7 @@ export default function Board() {
                   id="name"
                   placeholder="Column name"
                   value={inputColumnName}
-                  onChange={(e) => setInputColumnName(e.target.value)}
+                  onChange={handleTaskTitleChange}
                   className="col-span-3"
                 />
               </div>
@@ -201,9 +257,9 @@ export default function Board() {
       </div>
       <div className="flex flex-wrap">
         <DragDropContext
-          onDragEnd={(result) => onDragEnd(result, { columns, setColumns })}
+          onDragEnd={(result) => onDragEnd(result, { boards, setBoards })}
         >
-          {Object.entries(columns)?.map(([columnId, column]) => {
+          {Object.entries(boards[0].columns)?.map(([columnId, column]) => {
             return (
               <div className="mr-3 flex flex-col mb-2" key={columnId}>
                 <Card className="w-full rounded-bl-none rounded-br-none shadow-none border bg-background text-center">
@@ -264,19 +320,22 @@ export default function Board() {
                                         ref={provided.innerRef}
                                         value={item.title}
                                         onChange={(e) => {
-                                          const items = columns[columnId].items;
-                                          setColumns({
-                                            ...columns,
-                                            [columnId]: {
-                                              ...column,
-                                              items: items.map((data) => {
-                                                if (data.id === item.id) {
-                                                  data.title = e.target.value;
-                                                }
-                                                return data;
-                                              }),
-                                            },
-                                          });
+                                          const updateBoards = boards.map(
+                                            (cur) => {
+                                              if (cur.id === id) {
+                                                const items = boardColumns[
+                                                  columnId
+                                                ].items.map((i) => {
+                                                  if (i.id === item.id) {
+                                                    i.title = e.target.value;
+                                                  }
+                                                  return i;
+                                                });
+                                              }
+                                              return cur;
+                                            }
+                                          );
+                                          setBoards(updateBoards);
                                         }}
                                       />
                                       <div className="flex w-full items-end justify-end gap-2">
@@ -324,5 +383,7 @@ export default function Board() {
         </DragDropContext>
       </div>
     </div>
-  );
-}
+  ) : null;
+};
+
+export default Board;
